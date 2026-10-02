@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'">
+  <title>FFU Studio</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="identity"><div class="logo">F<span>·</span></div><div><strong>FFU Studio</strong><small>BITMAP FONT WORKBENCH</small></div></div>
+      <div class="top-actions"><span class="source">VE-ES generator <span id="source-version"></span></span><span id="runtime" class="status-pill">Checking engine…</span><button id="about-button" class="text-button">About</button></div>
+    </header>
+    <div class="content">
+      <main class="controls">
+        <div class="intro"><span class="eyebrow">NEW FONT PROJECT</span><h1>Generate a game-ready <em>.ffu</em> font</h1><p>Use an existing FFU as the template, then render glyphs from your own vector fonts. Characters absent from the font chain retain their original bitmap.</p></div>
+        <div id="error" class="error hidden" role="alert"></div>
+        <section class="card"><div class="card-heading"><span class="number">01</span><div><h2>Template</h2><p>The stock FFU provides palette, glyph map, and fallback bitmaps.</p></div></div><div class="field"><label for="template">Stock .ffu file <b>*</b></label><div class="input-row"><input id="template" type="text" placeholder="Select a stock .ffu from your game…"><button id="pick-template" class="browse">Browse</button></div></div><div id="template-details" class="detail-strip">Choose a template to inspect its cell and palette.</div></section>
+        <section class="card"><div class="card-heading"><span class="number">02</span><div><h2>Font chain</h2><p>Fonts are checked from top to bottom. Unsupported glyphs fall back to the template.</p></div></div><div id="font-list" class="font-list"></div><button id="add-font" class="add-button"><span>＋</span> Add another font</button></section>
+        <section class="card"><div class="card-heading"><span class="number">03</span><div><h2>Output</h2><p>Your new FFU is written separately from the template.</p></div></div><div class="field"><label for="output">Save generated .ffu as <b>*</b></label><div class="input-row"><input id="output" type="text" placeholder="Choose an output filename…"><button id="pick-output" class="browse">Save as</button></div></div></section>
+        <section class="card options-card"><div class="card-heading"><span class="number">04</span><div><h2>Rendering options</h2><p>Leave a field blank to use the latest generator's default.</p></div></div>
+          <div class="option-grid">
+            <div class="field"><label for="px">Pixel size</label><input id="px" inputmode="numeric" placeholder="Auto fit to template"><small>Explicit size overrides cap-height matching.</small></div>
+            <div class="field"><label for="matchChar">Match character</label><input id="matchChar" maxlength="2" placeholder="A"><small>Used to auto fit the source font.</small></div>
+            <div class="field"><label for="pad">Vertical padding</label><input id="pad" inputmode="numeric" placeholder="2"><small>Rows above and below the ink.</small></div>
+            <div class="field"><label for="cell">Cell height</label><div class="input-row"><input id="cell" inputmode="numeric" placeholder="Fit tallest glyph"><button id="use-template-cell" class="tiny-button" title="Set to template cell height">Use stock</button></div><small>Use stock to preserve the game's scale; it may clip accents.</small></div>
+            <div class="field"><label for="spaceRatio">Word-space ratio</label><input id="spaceRatio" inputmode="decimal" placeholder="Source spacing"><small>Space width relative to the letter “n”.</small></div>
+            <div class="field"><label for="tracking">Tracking</label><input id="tracking" inputmode="numeric" placeholder="0"><small>Extra columns added to glyph advance.</small></div>
+            <div class="field"><label for="glow">Soft edge / glow</label><input id="glow" inputmode="decimal" placeholder="0"><small>Blur coverage before 4bpp quantization.</small></div>
+            <div class="field"><label for="markLift">Vietnamese mark lift</label><input id="markLift" inputmode="numeric" placeholder="0"><small>Raise stacked tone marks by this many rows.</small></div>
+            <div class="field"><label for="stroke">Dark outline / stroke</label><input id="stroke" inputmode="decimal" placeholder="0"><small>Requires a template palette with a dark opaque entry.</small></div>
+            <label class="check-field"><input id="addVietnamese" type="checkbox" checked><span><strong>Add Vietnamese characters</strong><small>Append the generator's complete Vietnamese set.</small></span></label>
+          </div><div id="stroke-hint" class="hint hidden"></div>
+        </section>
+        <div class="action-bar"><div><strong id="action-title">Ready to generate</strong><small id="action-hint">Choose a template, at least one font, and an output file.</small></div><div class="action-buttons"><button id="stop" class="stop" disabled>Stop</button><button id="generate" class="generate">Generate FFU <span>↗</span></button></div></div>
+      </main>
+      <aside class="preview-pane"><div class="preview-intro"><span class="eyebrow">LIVE INSPECTION</span><h2>Glyph preview</h2><p>Compare the stock bitmap with your generated result.</p></div><div class="sample-control"><label for="sample">Preview text</label><div class="input-row"><input id="sample" value="Tiếng Việt Ấếự • Sample 123"><button id="refresh-preview" class="browse">Refresh</button></div></div>
+        <div class="preview-card"><div class="preview-head"><strong>Stock template</strong><span id="template-tag">No file</span></div><div class="image-wrap"><img id="template-image" alt="Stock FFU glyph preview" class="hidden"><span id="template-empty">Select an FFU to preview its glyphs.</span></div><div id="template-metrics" class="metrics"></div></div>
+        <div class="preview-card"><div class="preview-head"><strong>Generated font</strong><span id="output-tag">Awaiting generation</span></div><div class="image-wrap"><img id="output-image" alt="Generated FFU glyph preview" class="hidden"><span id="output-empty">The generated font will appear here.</span></div><div id="output-metrics" class="metrics"></div></div>
+        <button id="show-output" class="show-output hidden">Show output file ↗</button>
+        <div class="log-card"><div class="log-title"><div><span id="log-dot" class="dot"></span><strong>Build log</strong><span id="log-status">Idle</span></div><button id="clear-log">Clear</button></div><pre id="log">Run the generator to see its output here.</pre></div>
+      </aside>
+    </div>
+  </div>
+  <dialog id="about-dialog"><div class="dialog-head"><h2>About FFU Studio</h2><button id="close-about" aria-label="Close">×</button></div><div class="dialog-body"><p>FFU Studio wraps the current <strong>VE-ES ffugen.py</strong> and <strong>ffu.py</strong> for use with any compatible Otomate FFU template. It includes a private Windows Python runtime and its font libraries.</p><p>No game assets or fonts are included. Keep your original template and test each generated font in its target game. A forced cell height can clip glyphs, and an incorrect header height can cause a game crash.</p><p>Source revision: <code id="about-commit"></code></p></div></dialog>
+  <script src="renderer.js"></script>
+</body>
+</html>

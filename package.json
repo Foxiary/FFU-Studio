@@ -1,0 +1,26 @@
+{
+  "name": "ffu-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Standalone FFU bitmap font generator for Windows",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check src/main.js && node --check src/preload.js && node --check src/renderer.js",
+    "dist:win": "electron-builder --win --x64"
+  },
+  "devDependencies": {
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "dev.ffustudio.desktop",
+    "productName": "FFU Studio",
+    "files": ["src/**/*", "assets/**/*", "README.md", "package.json"],
+    "extraResources": [
+      {"from": "engine", "to": "engine"},
+      {"from": "vendor/windows-python", "to": "python"}
+    ],
+    "win": {"target": ["nsis", "portable"], "icon": "assets/icon.ico"}
+  }
+}
