@@ -21,4 +21,6 @@ At startup and once per day while open, the app checks the latest commit on the 
 
 Run `npm install` then `npm start`. On macOS or Linux, set `FFU_STUDIO_PYTHON` to a Python 3 environment with Pillow, fontTools, and NumPy installed. Run `npm run dist:win` to build Windows x64 installer and portable releases.
 
+Version 1.1.1 fixes template inspection and previews in Windows' isolated embeddable Python runtime. See [release notes](RELEASE_NOTES.md). To run the import regression check, use a Python with Pillow installed: `python -m unittest discover -s tests`. On Windows, the bundled runtime can run it with `vendor\windows-python\python.exe -m unittest discover -s tests`.
+
 Upstream source: [Foxiary/VE-ES commit 019ccce](https://github.com/Foxiary/VE-ES/commit/019ccceaf78e4862519e4164e9e0d317da5d745b).

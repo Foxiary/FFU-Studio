@@ -6,8 +6,12 @@ import argparse
 import base64
 import io
 import json
+import os
 import statistics
+import sys
 
+# The Windows embeddable runtime does not add the script directory to sys.path.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from PIL import Image
 from ffu import load
 

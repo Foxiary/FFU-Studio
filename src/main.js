@@ -35,8 +35,9 @@ function pythonFile() {
 }
 function runtimeStatus() {
   const python = pythonFile();
-  const result = spawnSync(python, ['-c',
-    'import PIL, fontTools, numpy, sys; print(sys.version.split()[0])'],
+  const result = spawnSync(python, ['-X', 'utf8', '-c',
+    'import sys; sys.path.insert(0, sys.argv[1]); import PIL, fontTools, numpy, ffu, bridge, ffugen; print(sys.version.split()[0])',
+    path.dirname(engineFile('bridge.py'))],
     {encoding: 'utf8', timeout: 12000, windowsHide: true});
   return {ok: result.status === 0, version: result.status === 0 ? result.stdout.trim() : '',
     detail: result.status === 0 ? 'Bundled font engine ready' :
@@ -99,7 +100,7 @@ function makeArgs(data) {
 }
 function inspectFile(file, sample) {
   return new Promise((resolve, reject) => {
-    execFile(pythonFile(), [engineFile('bridge.py'), file, '--text', String(sample || '').slice(0, 100)],
+    execFile(pythonFile(), ['-X', 'utf8', engineFile('bridge.py'), file, '--text', String(sample || '').slice(0, 100)],
       {encoding: 'utf8', timeout: 20000, maxBuffer: 12 * 1024 * 1024, windowsHide: true},
       (error, stdout, stderr) => {
         if (error) return reject(new Error((stderr || error.message).trim()));
@@ -177,7 +178,7 @@ ipcMain.handle('generate', async (_event, raw) => {
   saveSettings();
   const args = makeArgs(data);
   const runId = `${Date.now()}`;
-  const child = spawn(pythonFile(), ['-u', engineFile('ffugen.py'), ...args],
+  const child = spawn(pythonFile(), ['-X', 'utf8', '-u', engineFile('ffugen.py'), ...args],
     {cwd: path.dirname(data.template), windowsHide: true, shell:false,
       env: {...process.env, PYTHONIOENCODING:'utf-8'}});
   currentRun = child;
