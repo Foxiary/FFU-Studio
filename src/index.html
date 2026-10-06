@@ -11,8 +11,9 @@
   <div class="app">
     <header class="topbar">
       <div class="identity"><div class="logo">F<span>·</span></div><div><strong>FFU Studio</strong><small>BITMAP FONT WORKBENCH</small></div></div>
-      <div class="top-actions"><span class="source">VE-ES generator <span id="source-version"></span></span><span id="runtime" class="status-pill">Checking engine…</span><button id="about-button" class="text-button">About</button></div>
+      <div class="top-actions"><span class="source">VE-ES generator <span id="source-version"></span></span><span id="runtime" class="status-pill">Checking engine…</span><button id="check-updates" class="text-button">Check updates</button><button id="about-button" class="text-button">About</button></div>
     </header>
+    <div id="update-banner" class="update-banner hidden" role="status"><div><strong id="update-title"></strong><p id="update-message"></p></div><div class="update-actions"><button id="update-open" class="update-primary hidden">View changes ↗</button><button id="update-dismiss" class="update-secondary">Dismiss</button></div></div>
     <div class="content">
       <main class="controls">
         <div class="intro"><span class="eyebrow">NEW FONT PROJECT</span><h1>Generate a game-ready <em>.ffu</em> font</h1><p>Use an existing FFU as the template, then render glyphs from your own vector fonts. Characters absent from the font chain retain their original bitmap.</p></div>
@@ -46,5 +47,6 @@
   </div>
   <dialog id="about-dialog"><div class="dialog-head"><h2>About FFU Studio</h2><button id="close-about" aria-label="Close">×</button></div><div class="dialog-body"><p>FFU Studio wraps the current <strong>VE-ES ffugen.py</strong> and <strong>ffu.py</strong> for use with any compatible Otomate FFU template. It includes a private Windows Python runtime and its font libraries.</p><p>No game assets or fonts are included. Keep your original template and test each generated font in its target game. A forced cell height can clip glyphs, and an incorrect header height can cause a game crash.</p><p>Source revision: <code id="about-commit"></code></p></div></dialog>
   <script src="renderer.js"></script>
+  <script src="update-ui.js"></script>
 </body>
 </html>

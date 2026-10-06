@@ -7,8 +7,11 @@ contextBridge.exposeInMainWorld('ffu', {
   generate: data => ipcRenderer.invoke('generate', data),
   cancel: () => ipcRenderer.invoke('cancel'),
   showOutput: file => ipcRenderer.invoke('show-output', file),
+  checkUpdates: () => ipcRenderer.invoke('check-update'),
+  dismissUpdate: commit => ipcRenderer.invoke('dismiss-update', commit),
+  openUpdate: () => ipcRenderer.invoke('open-update'),
   on: (event, callback) => {
-    if (!['run-start','run-output','run-end'].includes(event)) throw new Error('Unknown event');
+    if (!['run-start','run-output','run-end','update-status'].includes(event)) throw new Error('Unknown event');
     const handler = (_event, payload) => callback(payload);
     ipcRenderer.on(event, handler);
     return () => ipcRenderer.removeListener(event, handler);

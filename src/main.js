@@ -1,11 +1,14 @@
-const {app, BrowserWindow, dialog, ipcMain, shell} = require('electron');
+const {app, BrowserWindow, dialog, ipcMain, shell, Notification} = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const {spawn, spawnSync, execFile} = require('node:child_process');
+const {checkForUpdate} = require('./update-check');
 
 let window;
 let currentRun = null;
 let settings = {};
+let lastUpdate = null;
+let updateRequest = null;
 const SOURCE_COMMIT = '019ccceaf78e4862519e4164e9e0d317da5d745b';
 
 function settingsFile() { return path.join(app.getPath('userData'), 'settings.json'); }
@@ -40,6 +43,24 @@ function runtimeStatus() {
       (result.stderr || result.error?.message || 'Python runtime could not start').trim()};
 }
 function emit(name, payload) { if (window && !window.isDestroyed()) window.webContents.send(name, payload); }
+function performUpdateCheck() {
+  if (updateRequest) return updateRequest;
+  updateRequest = checkForUpdate(SOURCE_COMMIT).then(result => {
+    lastUpdate = {...result, dismissed: settings.dismissedUpdateCommit === result.latestCommit};
+    if (result.status === 'available' && settings.lastNotifiedUpdateCommit !== result.latestCommit) {
+      settings.lastNotifiedUpdateCommit = result.latestCommit;
+      saveSettings();
+      if (app.isPackaged && Notification.isSupported()) {
+        const notice = new Notification({title: 'FFU Studio: VE-ES source update',
+          body: `New generator code is available: ${result.latestCommit.slice(0, 7)}`});
+        notice.on('click', () => {window?.show(); window?.focus();});
+        notice.show();
+      }
+    }
+    return lastUpdate;
+  }).catch(error => ({status: 'error', message: error.message})).finally(() => {updateRequest = null;});
+  return updateRequest;
+}
 function validate(data) {
   if (!data || typeof data !== 'object') throw new Error('Missing generator settings.');
   const template = String(data.template || '').trim();
@@ -100,14 +121,32 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  if (process.platform === 'win32') app.setAppUserModelId('dev.ffustudio.desktop');
   loadSettings();
   createWindow();
+  const updateTimer = setInterval(() => {
+    performUpdateCheck().then(result => emit('update-status', result));
+  }, 24 * 60 * 60 * 1000);
+  updateTimer.unref();
   app.on('activate', () => {if (BrowserWindow.getAllWindows().length === 0) createWindow();});
 });
 app.on('window-all-closed', () => {if (process.platform !== 'darwin') app.quit();});
 app.on('before-quit', () => currentRun?.kill());
 
-ipcMain.handle('state', () => ({settings, runtime: runtimeStatus(), sourceCommit: SOURCE_COMMIT}));
+ipcMain.handle('state', () => ({settings, runtime: runtimeStatus(), sourceCommit: SOURCE_COMMIT,
+  appVersion: app.getVersion()}));
+ipcMain.handle('check-update', () => performUpdateCheck());
+ipcMain.handle('dismiss-update', (_event, commit) => {
+  if (lastUpdate?.status !== 'available' || commit !== lastUpdate.latestCommit) return false;
+  settings.dismissedUpdateCommit = commit;
+  saveSettings();
+  lastUpdate.dismissed = true;
+  return true;
+});
+ipcMain.handle('open-update', () => {
+  if (lastUpdate?.status !== 'available') return false;
+  return shell.openExternal(lastUpdate.url);
+});
 ipcMain.handle('pick-file', async (_event, kind, current) => {
   if (kind === 'output') {
     const result = await dialog.showSaveDialog(window, {defaultPath: current || 'generated.ffu',

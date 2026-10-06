@@ -13,6 +13,10 @@ The app supports the complete `ffugen.py` option set, including `--stroke` added
 
 The Windows packages bundle the official Python 3.13.16 embeddable distribution, Pillow, fontTools, and NumPy. You do not need to install Python. Their licenses are inside `resources/python`. The Windows executables are unsigned and were cross-built on macOS; native Windows launch was not available for this build.
 
+## Update notifications
+
+At startup and once per day while open, the app checks the latest commit on the public VE-ES GitHub repository. If it differs from the bundled revision, the app shows an in-app banner and, where supported, one desktop notification per new commit. **Check updates** runs the check immediately. The app does not download or install code automatically; a newly built desktop package is required to use newer source. Dismissing the banner hides that specific commit until a newer one appears. Offline or rate-limited checks do not interrupt normal work.
+
 ## Source development
 
 Run `npm install` then `npm start`. On macOS or Linux, set `FFU_STUDIO_PYTHON` to a Python 3 environment with Pillow, fontTools, and NumPy installed. Run `npm run dist:win` to build Windows x64 installer and portable releases.
