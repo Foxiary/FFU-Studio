@@ -8,7 +8,7 @@ contextBridge.exposeInMainWorld('ffu', {
   cancel: () => ipcRenderer.invoke('cancel'),
   showOutput: file => ipcRenderer.invoke('show-output', file),
   checkUpdates: () => ipcRenderer.invoke('check-update'),
-  dismissUpdate: commit => ipcRenderer.invoke('dismiss-update', commit),
+  dismissUpdate: version => ipcRenderer.invoke('dismiss-update', version),
   openUpdate: () => ipcRenderer.invoke('open-update'),
   on: (event, callback) => {
     if (!['run-start','run-output','run-end','update-status'].includes(event)) throw new Error('Unknown event');

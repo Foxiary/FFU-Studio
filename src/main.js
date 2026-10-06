@@ -46,16 +46,18 @@ function runtimeStatus() {
 function emit(name, payload) { if (window && !window.isDestroyed()) window.webContents.send(name, payload); }
 function performUpdateCheck() {
   if (updateRequest) return updateRequest;
-  updateRequest = checkForUpdate(SOURCE_COMMIT).then(result => {
-    lastUpdate = {...result, dismissed: settings.dismissedUpdateCommit === result.latestCommit};
-    if (result.status === 'available' && settings.lastNotifiedUpdateCommit !== result.latestCommit) {
-      settings.lastNotifiedUpdateCommit = result.latestCommit;
-      saveSettings();
+  updateRequest = checkForUpdate(app.getVersion()).then(result => {
+    lastUpdate = {...result, dismissed: settings.dismissedReleaseVersion === result.latestVersion};
+    if (result.status === 'available' && settings.lastNotifiedReleaseVersion !== result.latestVersion) {
       if (app.isPackaged && Notification.isSupported()) {
-        const notice = new Notification({title: 'FFU Studio: VE-ES source update',
-          body: `New generator code is available: ${result.latestCommit.slice(0, 7)}`});
-        notice.on('click', () => {window?.show(); window?.focus();});
-        notice.show();
+        try {
+          const notice = new Notification({title: 'FFU Studio update available',
+            body: `Version ${result.latestVersion} is ready to download.`});
+          notice.on('click', () => {window?.show(); window?.focus();});
+          notice.show();
+          settings.lastNotifiedReleaseVersion = result.latestVersion;
+          saveSettings();
+        } catch { /* Keep the in-app banner available if desktop notifications fail. */ }
       }
     }
     return lastUpdate;
@@ -137,9 +139,9 @@ app.on('before-quit', () => currentRun?.kill());
 ipcMain.handle('state', () => ({settings, runtime: runtimeStatus(), sourceCommit: SOURCE_COMMIT,
   appVersion: app.getVersion()}));
 ipcMain.handle('check-update', () => performUpdateCheck());
-ipcMain.handle('dismiss-update', (_event, commit) => {
-  if (lastUpdate?.status !== 'available' || commit !== lastUpdate.latestCommit) return false;
-  settings.dismissedUpdateCommit = commit;
+ipcMain.handle('dismiss-update', (_event, version) => {
+  if (lastUpdate?.status !== 'available' || version !== lastUpdate.latestVersion) return false;
+  settings.dismissedReleaseVersion = version;
   saveSettings();
   lastUpdate.dismissed = true;
   return true;

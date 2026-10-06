@@ -1,6 +1,6 @@
-// Shared update banner for the two desktop apps.
+// Published FFU Studio release notifications.
 (() => {
-  const api = window.ffu || window.vees;
+  const api = window.ffu;
   const byId = id => document.getElementById(id);
   const banner = byId('update-banner');
   const checkButton = byId('check-updates');
@@ -18,11 +18,11 @@
     banner.className = `update-banner ${result.status === 'available' ? '' : result.status === 'error' ? 'error' : 'info'}`;
     openButton.classList.toggle('hidden', result.status !== 'available');
     if (result.status === 'available') {
-      byId('update-title').textContent = `New VE-ES source available · ${result.latestCommit.slice(0, 7)}`;
-      byId('update-message').textContent = `${result.title || 'The upstream repository has changed.'} A rebuilt desktop package is needed to use this code.`;
+      byId('update-title').textContent = `FFU Studio ${result.latestVersion} is available`;
+      byId('update-message').textContent = `You are running ${result.currentVersion}. Open the release page to download the new Setup or portable app.`;
     } else if (result.status === 'current') {
-      byId('update-title').textContent = 'VE-ES source is up to date';
-      byId('update-message').textContent = `This app includes the current upstream commit ${result.latestCommit.slice(0, 7)}.`;
+      byId('update-title').textContent = 'FFU Studio is up to date';
+      byId('update-message').textContent = `You are running ${result.currentVersion}. No newer published release is available.`;
     } else {
       byId('update-title').textContent = 'Could not check for updates';
       byId('update-message').textContent = `${result.message || 'Check your internet connection and try again.'}`;
@@ -40,7 +40,7 @@
     if (latest?.status === 'available') await api.openUpdate();
   });
   dismissButton.addEventListener('click', async () => {
-    if (latest?.status === 'available') await api.dismissUpdate(latest.latestCommit);
+    if (latest?.status === 'available') await api.dismissUpdate(latest.latestVersion);
     banner.classList.add('hidden');
   });
   api.on('update-status', result => render(result, false));

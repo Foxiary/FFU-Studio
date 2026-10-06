@@ -15,12 +15,14 @@ The Windows packages bundle the official Python 3.13.16 embeddable distribution,
 
 ## Update notifications
 
-At startup and once per day while open, the app checks the latest commit on the public VE-ES GitHub repository. If it differs from the bundled revision, the app shows an in-app banner and, where supported, one desktop notification per new commit. **Check updates** runs the check immediately. The app does not download or install code automatically; a newly built desktop package is required to use newer source. Dismissing the banner hides that specific commit until a newer one appears. Offline or rate-limited checks do not interrupt normal work.
+At startup and once per day while open, the app checks the latest published stable release of [Foxiary/FFU-Studio](https://github.com/Foxiary/FFU-Studio/releases). Tags must use `MAJOR.MINOR.PATCH`, optionally prefixed with `v`. A numerically newer version shows an in-app banner and, where supported, one desktop notification per version. Drafts, prereleases, equal or older versions, and source commits do not trigger an update. **Check updates** runs the check immediately. **Download release** opens the release page to download the Setup or portable app; installation is manual. **Dismiss** hides that version during automatic checks; a newer version can still notify. Offline or rate-limited checks do not interrupt font generation. Update checks use the public GitHub API and need no account or token.
 
 ## Source development
 
 Run `npm install` then `npm start`. On macOS or Linux, set `FFU_STUDIO_PYTHON` to a Python 3 environment with Pillow, fontTools, and NumPy installed. Run `npm run dist:win` to build Windows x64 installer and portable releases.
 
 Version 1.1.1 fixes template inspection and previews in Windows' isolated embeddable Python runtime. See [release notes](RELEASE_NOTES.md). To run the import regression check, use a Python with Pillow installed: `python -m unittest discover -s tests`. On Windows, the bundled runtime can run it with `vendor\windows-python\python.exe -m unittest discover -s tests`.
+
+Version 1.1.2 switches update notifications to published FFU Studio releases. Run `npm test` for release comparison, network error handling, and notification/dismissal regression checks. Users on 1.1.1 or earlier must install 1.1.2 manually once to get the new update checker.
 
 Upstream source: [Foxiary/VE-ES commit 019ccce](https://github.com/Foxiary/VE-ES/commit/019ccceaf78e4862519e4164e9e0d317da5d745b).
