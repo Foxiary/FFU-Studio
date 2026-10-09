@@ -91,6 +91,7 @@ function collect() {
   const options={};
   for(const id of ['px','matchChar','pad','cell','spaceRatio','tracking','glow','markLift','stroke'])options[id]=$(id).value.trim();
   options.addVietnamese=$('addVietnamese').checked;
+  options.normalizePunctuation=$('normalizePunctuation').checked;
   return {template:$('template').value.trim(),output:$('output').value.trim(),fonts:fonts.map(x=>({path:x.path.trim(),index:x.index||0})),options};
 }
 function setRunning(value) {
@@ -114,6 +115,7 @@ async function start() {
   const options=data.settings.options||{};
   for(const id of ['px','matchChar','pad','cell','spaceRatio','tracking','glow','markLift','stroke'])$(''+id).value=options[id]??(id==='matchChar'?'A':'');
   $('addVietnamese').checked=options.addVietnamese!==false;
+  $('normalizePunctuation').checked=options.normalizePunctuation!==false;
   renderFonts();
   $('add-font').addEventListener('click',()=>{fonts.push({path:'',index:0});renderFonts();});
   $('pick-template').addEventListener('click',async()=>{try{const file=await window.ffu.pickFile('template',$('template').value);if(file){$('template').value=file;clearError();refreshPreviews(false);}}catch(error){showError(error.message);}});

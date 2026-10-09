@@ -11,6 +11,24 @@ A separate Windows x64 desktop app for generating `.ffu` bitmap fonts from OTF, 
 
 The app supports the complete `ffugen.py` option set, including `--stroke` added at source revision `019ccceaf78e4862519e4164e9e0d317da5d745b`. Stroke requires a template palette with a dark opaque entry. A stock FFU template is necessary; arbitrary OTF/TTF files alone cannot supply game specific FFU metadata. No game assets or fonts are bundled.
 
+## Japanese punctuation
+
+**Normalize Japanese punctuation** is enabled by default. It renders Latin equivalents using your font chain and rendering settings while keeping each original Unicode character code in the FFU. Dialogue containing `？！` therefore uses the same bitmap, advance and baseline as `?!`; no dialogue text edit is required. Supported aliases are added even if absent from the template. Regenerate your FFU and replace the font in your game to apply the patch to existing projects.
+
+| Original characters | Rendered text |
+| --- | --- |
+| Fullwidth ASCII punctuation, including `？！，（）：；` | Corresponding ASCII punctuation `?!,():;` |
+| `、。` | `,.` |
+| `「」『』〝〞〟` | Straight double quotes `"` |
+| `〈〉《》` | `< >` |
+| `【】〔〕〖〗〘〙〚〛` | `[ ]` |
+| `…‥` | Three / two periods `...` / `..` |
+| `‼⁇⁈⁉` | `!!`, `??`, `?!`, `!?` |
+| `〜―・` | `~`, `-`, Latin middle dot `·` |
+| Ideographic space `U+3000` | Regular space, including the word-space ratio setting |
+
+Kana, kanji, fullwidth letters/digits and the kana vowel extender `ー` are not normalized. If the font chain lacks a replacement, the generator uses the original source glyph or template bitmap where available and reports a warning; it skips characters missing from both. Turn off the checkbox to preserve the previous punctuation behavior. The CLI opt-out flag is `--no-normalize-punctuation`.
+
 The Windows packages bundle the official Python 3.13.16 embeddable distribution, Pillow, fontTools, and NumPy. You do not need to install Python. Their licenses are inside `resources/python`. The Windows executables are unsigned and were cross-built on macOS; native Windows launch was not available for this build.
 
 ## Update notifications
@@ -26,3 +44,5 @@ Version 1.1.1 fixes template inspection and previews in Windows' isolated embedd
 Version 1.1.2 switches update notifications to published FFU Studio releases. Run `npm test` for release comparison, network error handling, and notification/dismissal regression checks. Users on 1.1.1 or earlier must install 1.1.2 manually once to get the new update checker.
 
 Upstream source: [Foxiary/VE-ES commit 019ccce](https://github.com/Foxiary/VE-ES/commit/019ccceaf78e4862519e4164e9e0d317da5d745b).
+
+The punctuation normalization is an FFU Studio addition to that upstream revision. Version 1.1.3 adds synthetic-font regression tests for glyph equivalence, fallback fonts, original bitmap preservation, opt-out, composite punctuation, word-space ratio and CLI cell measurement. Run `python -m unittest discover -s tests` with Pillow and fontTools installed.

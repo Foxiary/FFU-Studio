@@ -30,6 +30,7 @@ COMMON PITFALLS (verified on Virche Evermore)
 """
 import argparse
 import os
+import string
 import struct
 import sys
 
@@ -46,6 +47,27 @@ _VN = ('A\u00c0\u00c1\u1ea2\u00c3\u1ea0\u0102\u1eb0\u1eae\u1eb2\u1eb4\u1eb6'
        'U\u00d9\u00da\u1ee6\u0168\u1ee4\u01af\u1eea\u1ee8\u1eec\u1eee\u1ef0'
        'Y\u1ef2\u00dd\u1ef6\u1ef8\u1ef4\u0110')
 VN_CHARS = [c for ch in _VN for c in (ch, ch.lower())]
+
+# Keep the game's character codes, but draw punctuation with Latin glyphs.
+# Restrict width conversion to punctuation; kana, kanji, digits and letters
+# must not be rewritten by a blanket Unicode compatibility normalization.
+PUNCTUATION_ALIASES = {chr(ord(ch) + 0xfee0): ch for ch in string.punctuation}
+PUNCTUATION_ALIASES.update({
+    '、': ',', '。': '.', '・': '·', '　': ' ',
+    '「': '"', '」': '"', '『': '"', '』': '"',
+    '〝': '"', '〞': '"', '〟': '"',
+    '〈': '<', '〉': '>', '《': '<', '》': '>',
+    '【': '[', '】': ']', '〔': '[', '〕': ']',
+    '〖': '[', '〗': ']', '〘': '[', '〙': ']', '〚': '[', '〛': ']',
+    '〜': '~', '―': '-', '…': '...', '‥': '..',
+    '‼': '!!', '⁇': '??', '⁈': '?!', '⁉': '!?',
+})
+
+
+def source_text(chain, ch, normalize_punctuation=True):
+    """Choose a supported Latin equivalent before considering the original."""
+    target = PUNCTUATION_ALIASES.get(ch) if normalize_punctuation else None
+    return target if target is not None and chain.pick(target) is not None else ch
 
 
 # --------------------------------------------------------------- font chain
@@ -87,17 +109,19 @@ class Chain:
 
     def pick(self, ch):
         for s in self.sources:
-            if s.has(ch):
+            # Composite punctuation (e.g. '...') must use a single typeface.
+            if all(s.has(part) for part in ch):
                 return s
         return None
 
 
 # ------------------------------------------------------------------ rendering
 
-def measure(chain, chars):
+def measure(chain, chars, normalize_punctuation=False):
     """Compute shared (ymin, ymax), measured from ascender = 0."""
     lo, hi = 10 ** 6, -10 ** 6
     for ch in chars:
+        ch = source_text(chain, ch, normalize_punctuation)
         s = chain.pick(ch)
         if s is None:
             continue
@@ -353,7 +377,8 @@ def pack(rows):
 
 
 def build(tpl, chain, H, y_off, base_new, add_vn=True, verbose=True,
-          tracking=0, space_ratio=0.0, glow=0.0, mark_lift=0, stroke=0.0):
+          tracking=0, space_ratio=0.0, glow=0.0, mark_lift=0, stroke=0.0,
+          normalize_punctuation=True):
     """Build a new .ffu from rendered and template bitmaps."""
     palette = outline_palette(tpl.palettes[0]) if stroke else None
     base_old = baseline_of(tpl)
@@ -372,16 +397,25 @@ def build(tpl, chain, H, y_off, base_new, add_vn=True, verbose=True,
     if add_vn:
         for ch in VN_CHARS:
             chars.setdefault(ch, None)
+    if normalize_punctuation:
+        for ch in PUNCTUATION_ALIASES:
+            chars.setdefault(ch, None)
 
     entries, order = [], sorted(chars, key=FFU.u8i)
     n_new = n_kept = n_skip = 0
+    normalized, unsupported = [], []
     for ch in order:
-        r = render(chain, ch, H, y_off, tracking, glow, mark_lift,
+        text = source_text(chain, ch, normalize_punctuation)
+        if normalize_punctuation and ch in PUNCTUATION_ALIASES and text == ch:
+            unsupported.append(ch)
+        r = render(chain, text, H, y_off, tracking, glow, mark_lift,
                    stroke, palette)
         if r is not None:
             adv, w, rows = r
             entries.append((ch, adv, H, pack(rows)))
             n_new += 1
+            if text != ch:
+                normalized.append(ch)
             continue
         # Missing from fonts -> keep the template bitmap.
         gi = chars[ch]
@@ -407,7 +441,7 @@ def build(tpl, chain, H, y_off, base_new, add_vn=True, verbose=True,
         if adv_n:
             want = max(1, int(round(adv_n * space_ratio)))
             for k, (c, a, hh, d) in enumerate(entries):
-                if c == ' ':
+                if c == ' ' or (normalize_punctuation and c == '　' and c in normalized):
                     entries[k] = (c, want, hh, d)
                     if verbose:
                         print('  dau cach: %d -> %d (%.2f x chu n)' % (a, want, space_ratio))
@@ -415,6 +449,12 @@ def build(tpl, chain, H, y_off, base_new, add_vn=True, verbose=True,
     if verbose:
         print('  rendered: %d | kept from template: %d | skipped: %d'
               % (n_new, n_kept, n_skip))
+        if normalize_punctuation:
+            print('  normalized punctuation: %d glyphs' % len(normalized))
+            if unsupported:
+                print('  WARNING: punctuation equivalents missing from font chain: %s; '
+                      'using original glyphs where available, otherwise skipping'
+                      % ' '.join('%s (U+%04X)' % (ch, ord(ch)) for ch in unsupported))
 
     # range table: merge consecutive characters
     ranges, gtab, bmp = [], bytearray(), bytearray()
@@ -488,6 +528,10 @@ def main():
                          'sysfont spacing needs about 5 put back')
     ap.add_argument('--no-vn', action='store_true',
                     help='do not add the Vietnamese charset')
+    ap.add_argument('--no-normalize-punctuation', action='store_true',
+                    help='keep Japanese/fullwidth punctuation as supplied by '
+                         'the source fonts or template; by default render Latin '
+                         'equivalents at the original character codes')
     a = ap.parse_args()
 
     tpl = load(a.template)
@@ -521,8 +565,10 @@ def main():
                 pass
     if not a.no_vn:
         chars.update(VN_CHARS)
+    if not a.no_normalize_punctuation:
+        chars.update(PUNCTUATION_ALIASES)
 
-    lo, hi = measure(chain, chars)
+    lo, hi = measure(chain, chars, not a.no_normalize_punctuation)
     ox = stroke_margin(a.stroke)          # the outline reaches past the ink
     H = (hi - lo) + 2 * a.pad + 2 * ox
     y_off = a.pad + ox - lo                    # PIL draw origin (y=0 is the ascender line)
@@ -556,7 +602,8 @@ def main():
 
     data = build(tpl, chain, H, y_off, base_new, add_vn=not a.no_vn,
                  tracking=a.tracking, space_ratio=a.space_ratio,
-                 glow=a.glow, mark_lift=a.mark_lift, stroke=a.stroke)
+                 glow=a.glow, mark_lift=a.mark_lift, stroke=a.stroke,
+                 normalize_punctuation=not a.no_normalize_punctuation)
     with open(a.out, 'wb') as fh:
         fh.write(data)
     print('-> %s (%s byte)' % (a.out, format(len(data), ',')))

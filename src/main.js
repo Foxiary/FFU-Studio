@@ -98,6 +98,7 @@ function makeArgs(data) {
     if (value) args.push(flag, value);
   }
   if (data.options.addVietnamese === false) args.push('--no-vn');
+  if (data.options.normalizePunctuation === false) args.push('--no-normalize-punctuation');
   return args;
 }
 function inspectFile(file, sample) {
